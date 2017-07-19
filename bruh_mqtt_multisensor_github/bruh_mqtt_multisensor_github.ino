@@ -103,9 +103,9 @@ const int BUFFER_SIZE = 300;
 
 // MQ-2 Sensor stuff
 int lpg, co, smoke;
-float diffLPG = 0.1;
-float diffCO = 0.1;
-float diffSmoke = 0.1;
+int diffLPG = 1;
+int diffCO = 1;
+int diffSmoke = 1;
 
 
 /******************************** GLOBALS for fade/flash *******************************/
