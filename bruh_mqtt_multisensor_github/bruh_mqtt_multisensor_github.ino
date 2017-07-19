@@ -463,15 +463,15 @@ void loop() {
     float newHumValue = dht.readHumidity();
 
     // read out of the gas sensor
-    newLPG = mq2.readLPG();
-    newCO = mq2.readCO();
-    newSmoke = mq2.readSmoke();
+    int newLPG = mq2.readLPG();
+    int newCO = mq2.readCO();
+    int newSmoke = mq2.readSmoke();
 
     if (checkBoundSensor(newLPG, lpg, difflpg)) {
       lpg = newLPG;
       sendState();
     }
-    if (checkBoundSensor(newCO, CO, diffCO)) {
+    if (checkBoundSensor(newCO, co, diffCO)) {
       co = newCO;
       sendState();
     }
