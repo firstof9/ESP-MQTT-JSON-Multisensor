@@ -35,7 +35,7 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <ArduinoJson.h>
-#include <MQ135.h>
+#include <MQ2.h>
 
 
 
@@ -73,7 +73,7 @@ const int bluePin = D3;
 #define DHTPIN    D7
 #define DHTTYPE   DHT22
 #define LDRPIN    A0
-#define MQ135PIN A1 // change this to the pin of the MQ135
+#define MQ2PIN A1 // change this to the pin of the MQ2
 
 
 
@@ -100,6 +100,12 @@ int calibrationTime = 0;
 const int BUFFER_SIZE = 300;
 
 #define MQTT_MAX_PACKET_SIZE 512
+
+// MQ-2 Sensor stuff
+int lpg, co, smoke;
+float diffLPG = 0.1;
+float diffCO = 0.1;
+float diffSmoke = 0.1;
 
 
 /******************************** GLOBALS for fade/flash *******************************/
@@ -136,7 +142,7 @@ byte flashBrightness = brightness;
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
-MQ135 gasSensor = MQ135(MQ135PIN);
+MQ2 mq2(MQ2PIN);
 
 
 /********************************** START SETUP*****************************************/
@@ -147,8 +153,9 @@ void setup() {
   pinMode(PIRPIN, INPUT);
   pinMode(DHTPIN, INPUT);
   pinMode(LDRPIN, INPUT);
-  pinMode(MQ135PIN,INPUT);
 
+  mq2.begin();
+  
   Serial.begin(115200);
   delay(10);
 
@@ -355,7 +362,9 @@ void sendState() {
   root["ldr"] = (String)LDR;
   root["temperature"] = (String)tempValue;
   root["heatIndex"] = (String)calculateHeatIndex(humValue, tempValue);
-  root["airquality"] = (String)airQuality;
+  root["lpg"] = (String)lpg;
+  root["co"] = (String)co;
+  root["smoke"] = (String)smoke;
 
 
   char buffer[root.measureLength() + 1];
@@ -453,7 +462,25 @@ void loop() {
     float newTempValue = dht.readTemperature(true); //to use celsius remove the true text inside the parentheses  
     float newHumValue = dht.readHumidity();
 
-    float newAirQuality = gasSensor.getPPM(); // read out of the gas sensor
+    // read out of the gas sensor
+    newLPG = mq2.readLPG();
+    newCO = mq2.readCO();
+    newSmoke = mq2.readSmoke();
+
+    if (checkBoundSensor(newLPG, lpg, difflpg)) {
+      lpg = newLPG;
+      sendState();
+    }
+    if (checkBoundSensor(newCO, CO, diffCO)) {
+      co = newCO;
+      sendState();
+    }
+    if (checkBoundSensor(newSmoke, smoke, diffSmoke)) {
+      smoke = newSmoke;
+      sendState();
+    }
+
+
 
     //PIR CODE
     pirValue = digitalRead(PIRPIN); //read state of the
@@ -481,12 +508,6 @@ void loop() {
       humValue = newHumValue;
       sendState();
     }
-
-    if (checkBoundSensor(newAirQuality, airQuality, diffAQ)) {
-      airQuality = newAirQuality;
-      sendState();
-    }
-
 
     int newLDR = analogRead(LDRPIN);
 
