@@ -467,7 +467,7 @@ void loop() {
     int newCO = mq2.readCO();
     int newSmoke = mq2.readSmoke();
 
-    if (checkBoundSensor(newLPG, lpg, difflpg)) {
+    if (checkBoundSensor(newLPG, lpg, diffLPG)) {
       lpg = newLPG;
       sendState();
     }
